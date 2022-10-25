@@ -42,6 +42,8 @@ def predict(image_path):
                                               feed_dict={inputs: [image_data] * _BATCH_SIZE})
 
         probabilities_dict = {_LABEL_MAP.get(i): l for i, l in enumerate(probabilities[0])}
+        for key, value in probabilities_dict.items():
+            probabilities_dict[key] = float(value)
         pre_label = _LABEL_MAP.get(class_index[0])
         result = {"class": pre_label, "probability": probabilities_dict}
         return result
