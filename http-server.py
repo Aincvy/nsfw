@@ -10,6 +10,43 @@ import json
 def checkImage(path, wfile):
     import os.path
     import tempfile
+    
+    tmpFile = None
+    dlFile = None
+    if path.startswith('http://') or path.startswith('https://'):
+        # download
+        import urllib.request
+        import shutil
+        with urllib.request.urlopen(path) as f:
+            contentType = f.getheader('Content-Type',"").lower()
+            print(contentType)
+            # print(f.getheaders())
+            if contentType.startswith("image/"):
+                # images 
+                dlFileExt = ''
+                if contentType == "image/jpeg":
+                    dlFileExt = '.jpeg'
+                elif contentType == "image/png":
+                    dlFileExt = '.png'
+                elif contentType == "image/webp":
+                    dlFileExt = '.webp'
+                else:
+                    data = {'msg': 'unsupported image type: ' + contentType}
+                    wfile.write(json.dumps(data).encode())
+                    return 
+                
+                if dlFileExt != '':
+                    dlFile = tempfile.NamedTemporaryFile(suffix=dlFileExt, delete = False)
+                    print('dl file path: ' + dlFile.name)
+                    shutil.copyfileobj(f, dlFile)
+                    dlFile.close()
+            else:
+                data = {'msg': 'not image, path: ' + path}
+                wfile.write(json.dumps(data).encode())
+                return 
+        
+        # change path to local file path.
+        path = dlFile.name;
     if os.path.isfile(path):
         if path.endswith('.png'):
             # png files
@@ -34,6 +71,11 @@ def checkImage(path, wfile):
             tmpFile.close()
             os.unlink(tmpFile.name)
             print('File deleted: ' + path)
+        if dlFile is not None:
+            # delete 
+            os.unlink(dlFile.name)
+            print('File deleted: ' + dlFile.name)
+            
     else:
         data = {'msg': 'invalid file path: ' + path}
         wfile.write(json.dumps(data).encode())
